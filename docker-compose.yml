@@ -1,13 +1,25 @@
-
 services:
   db:
-    # PostgreSQL database
+    # TBD
 
   backend:
-    # FastAPI backend
+    build: ./backend
+    restart: unless-stopped
+    command: sh -c "alembic upgrade head && fastapi dev app/main.py --host 0.0.0.0 --port 8000"
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-app}@db:5432/${POSTGRES_DB:-office_queue}
+      CORS_ORIGINS: '["http://localhost:5173"]'
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/alembic:/app/alembic
+    depends_on:
+      - db
 
   frontend:
-    # React frontend
+    # TBD
+  
 
 volumes:
   db_data:
