@@ -2,7 +2,7 @@ import threading
 
 import pytest
 
-from ticket_queue import (
+from app.ticket_queue import (
     CounterPolicy,
     QueueManager,
     ServiceType,

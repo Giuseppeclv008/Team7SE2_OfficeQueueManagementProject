@@ -1,4 +1,4 @@
-from ticket_queue import AllServicesPolicy, ServiceType
+from app.ticket_queue import AllServicesPolicy, ServiceType
 
 
 def test_all_services_policy_allows_every_service_for_any_counter():

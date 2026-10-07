@@ -1,4 +1,4 @@
-from ticket_queue import InMemoryTicketQueue, ServiceType
+from app.ticket_queue import InMemoryTicketQueue, ServiceType
 
 
 def test_new_queue_is_empty():

@@ -1,6 +1,6 @@
 import pytest
 
-from ticket_queue import DailyServiceNumberGenerator, ServiceType
+from app.ticket_queue import DailyServiceNumberGenerator, ServiceType
 
 S = ServiceType
 

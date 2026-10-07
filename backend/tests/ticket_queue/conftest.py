@@ -2,7 +2,7 @@ from datetime import date, datetime, timedelta
 
 import pytest
 
-from ticket_queue import (
+from app.ticket_queue import (
     AllServicesPolicy,
     DailyServiceNumberGenerator,
     InMemoryEventBus,

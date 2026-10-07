@@ -1,4 +1,4 @@
-from ticket_queue import InMemoryTicketQueue, LongestQueueStrategy, ServiceType
+from app.ticket_queue import InMemoryTicketQueue, LongestQueueStrategy, ServiceType
 
 S = ServiceType
 

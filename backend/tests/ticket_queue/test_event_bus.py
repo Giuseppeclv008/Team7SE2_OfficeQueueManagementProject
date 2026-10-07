@@ -1,6 +1,6 @@
 import logging
 
-from ticket_queue import InMemoryEventBus
+from app.ticket_queue import InMemoryEventBus
 
 
 class Ping:

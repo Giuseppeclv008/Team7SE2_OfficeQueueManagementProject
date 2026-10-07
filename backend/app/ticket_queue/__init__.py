@@ -2,7 +2,7 @@
 
 Usage from the API layer:
 
-    from ticket_queue import create_default_queue_manager, TicketCalled
+    from app.ticket_queue import create_default_queue_manager, TicketCalled
 
     manager = create_default_queue_manager()
     manager.events.subscribe(TicketCalled, on_called)
