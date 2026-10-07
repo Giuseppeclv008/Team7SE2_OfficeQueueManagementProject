@@ -13,6 +13,6 @@ class LongestQueueStrategy(SelectionStrategy):
             return None
         service, _ = min(
             candidates,
-            key=lambda item: (-len(item[1]), item[1].peek().issued_at),
+            key=lambda item: (-len(item[1]), item[1].peek().created_at),
         )
         return service

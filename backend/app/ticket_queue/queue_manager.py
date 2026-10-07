@@ -1,10 +1,13 @@
 """Facade used by the API layer.
 
+Issued tickets are WAITING; call_next returns the ticket as IN_PROGRESS.
+
 issue_ticket() runs when a customer clicks "get ticket" (enqueue).
 call_next() runs when an officer clicks "call next" (dequeue).
 """
 import threading
 from collections.abc import Mapping
+from dataclasses import replace
 from datetime import datetime, timezone
 
 from .events import TicketCalled, TicketIssued
@@ -15,7 +18,7 @@ from .interfaces import (
     TicketNumberGenerator,
     TicketQueue,
 )
-from .models import ServiceType, Ticket
+from .models import ServiceType, Ticket, TicketStatus
 
 
 class QueueManager:
@@ -46,9 +49,9 @@ class QueueManager:
 
         with self._lock:
             ticket = Ticket(
-                number=self._numbers.next(service),
-                service=service,
-                issued_at=datetime.now(timezone.utc),
+                code=self._numbers.next(service),
+                service_type=service,
+                created_at=datetime.now(timezone.utc),
             )
             self._queues[service].enqueue(ticket)
 
@@ -62,7 +65,7 @@ class QueueManager:
             service = self._strategy.select(candidates)
             if service is None:
                 return None
-            ticket = self._queues[service].dequeue()
+            ticket = replace(self._queues[service].dequeue(), status=TicketStatus.IN_PROGRESS)
 
         self._bus.publish(TicketCalled(ticket, counter_id))
         return ticket

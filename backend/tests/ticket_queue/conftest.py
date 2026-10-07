@@ -31,8 +31,8 @@ class FakeToday:
 
 @pytest.fixture
 def make_ticket():
-    def _make(number: str, service: ServiceType, seconds: int = 0) -> Ticket:
-        return Ticket(number, service, BASE_TIME + timedelta(seconds=seconds))
+    def _make(code: int, service: ServiceType, seconds: int = 0) -> Ticket:
+        return Ticket(code, service, BASE_TIME + timedelta(seconds=seconds))
 
     return _make
 

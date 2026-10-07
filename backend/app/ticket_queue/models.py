@@ -1,18 +1,23 @@
 """Domain types for the ticket queue.
 
-ServiceType is the shared enum from app.models, re-exported here so the
-rest of the package keeps importing it from .models.
+Ticket mirrors the columns of the ticket table (app.models.Ticket), so a
+queue ticket can be stored without translation. ServiceType and TicketStatus
+are the shared enums from app.models.
 """
-from dataclasses import dataclass
+import uuid
+from dataclasses import dataclass, field
 from datetime import datetime
 
 from app.models.serviceType import ServiceType
+from app.models.ticketStatus import TicketStatus
 
-__all__ = ["ServiceType", "Ticket"]
+__all__ = ["ServiceType", "Ticket", "TicketStatus"]
 
 
 @dataclass(frozen=True)
 class Ticket:
-    number: str  # e.g. "X001"
-    service: ServiceType
-    issued_at: datetime
+    code: int  # per-service, restarts every day; see numbering.format_code for "X001"
+    service_type: ServiceType
+    created_at: datetime
+    status: TicketStatus = TicketStatus.WAITING
+    id: uuid.UUID = field(default_factory=uuid.uuid4)
