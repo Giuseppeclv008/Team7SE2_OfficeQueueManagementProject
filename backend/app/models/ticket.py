@@ -2,7 +2,7 @@ from datetime import datetime
 import uuid
 import uuid
 
-from sqlalchemy import Enum, String, func
+from sqlalchemy import Enum, func
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Uuid
 
