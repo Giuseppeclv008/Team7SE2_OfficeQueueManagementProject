@@ -1,0 +1,13 @@
+
+services:
+  db:
+    # PostgreSQL database
+
+  backend:
+    # FastAPI backend
+
+  frontend:
+    # React frontend
+
+volumes:
+  db_data:
