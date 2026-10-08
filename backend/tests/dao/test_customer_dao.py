@@ -1,3 +1,5 @@
+import pytest
+
 from app.dao.customer_dao import CustomerDAO
 from app.dto.auth_mockup_dto import CustomerDTO, UserRole
 
@@ -72,3 +74,18 @@ def test_find_all_keeps_insertion_order():
     dao.save(CustomerDTO(id=2, name="B"))
 
     assert [c.id for c in dao.find_all()] == [1, 3, 2]
+
+
+# --- known bugs (code review) -----------------------------------------------
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason="Storage is per instance and re-seeded in __init__, so a customer "
+    "saved through one DAO (e.g. one request) is gone in the next.",
+)
+def test_bug_saved_customer_lost_with_new_dao_instance():
+    customer = CustomerDTO(id=42, name="Mario")
+    CustomerDAO().save(customer)
+
+    assert CustomerDAO().find_by_id(42) == customer

@@ -80,3 +80,24 @@ def test_officer_serializes_role_as_value():
         "counter_id": 2,
         "role": "officer",
     }
+
+
+# --- known bugs (code review) -----------------------------------------------
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason="role is an open UserRole, so a CustomerDTO can claim the officer role.",
+)
+def test_customer_dto_accepts_officer_role():
+    with pytest.raises(ValidationError):
+        CustomerDTO(id=2, name="x", role=UserRole.OFFICER)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason="role is an open UserRole, so an OfficerDTO can claim the customer role.",
+)
+def test_officer_dto_accepts_customer_role():
+    with pytest.raises(ValidationError):
+        OfficerDTO(id=2, name="x", counter_id=1, role=UserRole.CUSTOMER)

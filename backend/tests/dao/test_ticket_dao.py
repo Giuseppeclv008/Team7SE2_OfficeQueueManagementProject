@@ -1,6 +1,10 @@
 import uuid
 from datetime import datetime
 
+import pytest
+from sqlalchemy.exc import IntegrityError, PendingRollbackError
+from sqlalchemy.orm.exc import UnmappedInstanceError
+
 from app.dao.ticket_dao import TicketDAO
 from app.models import ServiceType, Ticket, TicketStatus
 from app.ticket_queue import create_default_queue_manager
@@ -127,3 +131,80 @@ def test_find_all_returns_tickets_of_every_service(db):
         dao.save(make_ticket(service=service))
 
     assert {t.service_type for t in dao.find_all()} == set(ServiceType)
+
+
+# --- known bugs (code review) -----------------------------------------------
+# Each test asserts the intended behaviour and fails on the current code.
+# strict=True: once the bug is fixed the test XPASSes and fails the run, so
+# the marker gets removed.
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason="created_at is a naive DateTime(); QueueManager stamps tz-aware UTC, "
+    "so the time zone is lost on save. Fix: DateTime(timezone=True).",
+)
+def test_bug_created_at_loses_utc_timezone(db):
+    issued = create_default_queue_manager().issue_ticket(S.BOXES)
+    dao = TicketDAO(db)
+    dao.save(
+        Ticket(
+            id=issued.id,
+            code=issued.code,
+            service_type=issued.service_type,
+            status=issued.status,
+            created_at=issued.created_at,
+        )
+    )
+    db.expunge_all()
+
+    stored = dao.find_by_id(issued.id)
+
+    assert stored.created_at.tzinfo is not None
+    assert stored.created_at == issued.created_at
+
+
+@pytest.mark.xfail(
+    strict=True,
+    raises=UnmappedInstanceError,
+    reason="ticket_queue.Ticket claims to be storable without translation, "
+    "but TicketDAO.save only accepts the ORM Ticket.",
+)
+def test_bug_save_rejects_queue_ticket(db):
+    issued = create_default_queue_manager().issue_ticket(S.BOXES)
+    dao = TicketDAO(db)
+
+    dao.save(issued)
+
+    assert dao.find_by_id(issued.id).code == issued.code
+
+
+@pytest.mark.xfail(
+    strict=True,
+    raises=PendingRollbackError,
+    reason="save() does not roll back when commit fails, so the session stays "
+    "unusable for every later DAO call.",
+)
+def test_bug_failed_save_leaves_session_unusable(db):
+    dao = TicketDAO(db)
+    first = dao.save(make_ticket(code=1))
+    db.expunge_all()
+
+    with pytest.raises(IntegrityError):
+        dao.save(make_ticket(code=2, id=first.id))  # duplicate primary key
+
+    assert [t.code for t in dao.find_all()] == [1]
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason="find_all orders only by created_at; tickets with the same "
+    "timestamp come back in arbitrary (insertion) order. Needs a tiebreaker.",
+)
+def test_bug_find_all_order_undefined_for_equal_created_at(db):
+    same_time = datetime(2026, 10, 8, 9, 0)
+    dao = TicketDAO(db)
+    for code in (3, 1, 2):
+        dao.save(make_ticket(code=code, created_at=same_time))
+
+    assert [t.code for t in dao.find_all()] == [1, 2, 3]

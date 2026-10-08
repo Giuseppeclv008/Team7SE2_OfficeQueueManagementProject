@@ -1,5 +1,10 @@
+import pytest
+
 from app.dao.officer_dao import OfficerDAO
 from app.dto.auth_mockup_dto import OfficerDTO, UserRole
+from app.models import ServiceType
+from app.ticket_queue import create_default_queue_manager
+from app.ticket_queue.events import TicketCalled
 
 
 # --- seed data --------------------------------------------------------------
@@ -62,3 +67,35 @@ def test_find_all_returns_a_copy():
     dao.find_all().clear()
 
     assert len(dao.find_all()) == 2
+
+
+# --- known bugs (code review) -----------------------------------------------
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason="Storage is per instance and re-seeded in __init__, so an officer "
+    "saved through one DAO (e.g. one request) is gone in the next.",
+)
+def test_bug_saved_officer_lost_with_new_dao_instance():
+    officer = OfficerDTO(id=42, name="Luigi", counter_id=3)
+    OfficerDAO().save(officer)
+
+    assert OfficerDAO().find_by_id(42) == officer
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason="OfficerDTO.counter_id is int, but the queue keys counters by str "
+    "(call_next, CounterPolicy, TicketCalled.counter_id).",
+)
+def test_bug_officer_counter_id_type_mismatches_queue_api():
+    officer = OfficerDAO().find_by_id(1)
+    manager = create_default_queue_manager()
+    called: list[TicketCalled] = []
+    manager.events.subscribe(TicketCalled, called.append)
+    manager.issue_ticket(ServiceType.BOXES)
+
+    manager.call_next(officer.counter_id)
+
+    assert called[0].counter_id == "1"
