@@ -56,28 +56,28 @@ def test_customer_serializes_role_as_value():
 
 
 def test_officer_role_defaults_to_officer():
-    assert OfficerDTO(id=1, name="Bob", counter_id=1).role is UserRole.OFFICER
+    assert OfficerDTO(id=1, name="Bob", counter_id="1").role is UserRole.OFFICER
 
 
 @pytest.mark.parametrize("missing", ["id", "name", "counter_id"])
 def test_officer_requires_field(missing):
-    data = {"id": 1, "name": "Bob", "counter_id": 1}
+    data = {"id": 1, "name": "Bob", "counter_id": "1"}
     del data[missing]
 
     with pytest.raises(ValidationError):
         OfficerDTO.model_validate(data)
 
 
-def test_officer_rejects_non_integer_counter_id():
+def test_officer_rejects_non_string_counter_id():
     with pytest.raises(ValidationError):
-        OfficerDTO.model_validate({"id": 1, "name": "Bob", "counter_id": "front"})
+        OfficerDTO.model_validate({"id": 1, "name": "Bob", "counter_id": 1})
 
 
 def test_officer_serializes_role_as_value():
-    assert OfficerDTO(id=1, name="Bob", counter_id=2).model_dump(mode="json") == {
+    assert OfficerDTO(id=1, name="Bob", counter_id="2").model_dump(mode="json") == {
         "id": 1,
         "name": "Bob",
-        "counter_id": 2,
+        "counter_id": "2",
         "role": "officer",
     }
 
@@ -85,19 +85,11 @@ def test_officer_serializes_role_as_value():
 # --- known bugs (code review) -----------------------------------------------
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="role is an open UserRole, so a CustomerDTO can claim the officer role.",
-)
 def test_customer_dto_accepts_officer_role():
     with pytest.raises(ValidationError):
         CustomerDTO(id=2, name="x", role=UserRole.OFFICER)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="role is an open UserRole, so an OfficerDTO can claim the customer role.",
-)
 def test_officer_dto_accepts_customer_role():
     with pytest.raises(ValidationError):
-        OfficerDTO(id=2, name="x", counter_id=1, role=UserRole.CUSTOMER)
+        OfficerDTO(id=2, name="x", counter_id="1", role=UserRole.CUSTOMER)
