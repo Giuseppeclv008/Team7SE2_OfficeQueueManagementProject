@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime, timezone
 
 import pytest
 from sqlalchemy.exc import IntegrityError
@@ -185,3 +185,23 @@ def test_bug_find_all_order_undefined_for_equal_created_at(db):
         dao.save(make_ticket(code=code, created_at=same_time))
 
     assert [t.code for t in dao.find_all()] == [1, 2, 3]
+
+# --- last_code --------------------------------------------------------------
+
+
+def test_last_code_is_zero_without_tickets(db):
+    assert TicketDAO(db).last_code(S.BOXES, date(2026, 10, 8)) == 0
+
+
+def test_last_code_is_the_highest_of_that_service_and_day(db):
+    dao = TicketDAO(db)
+    for code, service, created_at in [
+        (1, S.BOXES, datetime(2026, 10, 8, 0, 0, tzinfo=timezone.utc)),
+        (3, S.BOXES, datetime(2026, 10, 8, 23, 59, tzinfo=timezone.utc)),
+        (9, S.BILLS_PAYMENT, datetime(2026, 10, 8, 10, 0, tzinfo=timezone.utc)),
+        (7, S.BOXES, datetime(2026, 10, 7, 23, 59, tzinfo=timezone.utc)),
+        (8, S.BOXES, datetime(2026, 10, 9, 0, 0, tzinfo=timezone.utc)),
+    ]:
+        dao.save(make_ticket(code=code, service=service, created_at=created_at))
+
+    assert dao.last_code(S.BOXES, date(2026, 10, 8)) == 3
