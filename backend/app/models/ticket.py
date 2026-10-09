@@ -2,7 +2,7 @@ from datetime import datetime
 import uuid
 import uuid
 
-from sqlalchemy import DateTime, Enum, func
+from sqlalchemy import Enum, func
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Uuid
 
@@ -19,4 +19,4 @@ class Ticket(Base):
     code: Mapped[int] = mapped_column(nullable=False)
     service_type: Mapped[ServiceType] = mapped_column( Enum(ServiceType),nullable=False)
     status: Mapped[TicketStatus] = mapped_column( Enum(TicketStatus), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
