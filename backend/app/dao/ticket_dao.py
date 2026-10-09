@@ -1,5 +1,5 @@
 from uuid import UUID
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 from app.models.ticket import Ticket
 
@@ -10,8 +10,12 @@ class TicketDAO:
         self.db = db
 
     def save(self, ticket: Ticket) -> Ticket:
-        self.db.add(ticket)
-        self.db.commit()
+        try:
+            self.db.add(ticket)
+            self.db.commit()
+        except Exception:
+            self.db.rollback()
+            raise
         self.db.refresh(ticket)
         return ticket
 
@@ -19,4 +23,5 @@ class TicketDAO:
         return self.db.get(Ticket, ticket_id)
 
     def find_all(self) -> list[Ticket]:
-        return list(self.db.scalars(select(Ticket).order_by(Ticket.created_at)).all())
+        stmt = select(Ticket).order_by(Ticket.created_at, Ticket.code)
+        return list(self.db.scalars(stmt).all())

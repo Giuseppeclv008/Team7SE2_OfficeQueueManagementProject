@@ -1,5 +1,6 @@
 from enum import Enum
 from pydantic import BaseModel
+from typing import Literal
 
 
 class UserRole(str, Enum):
@@ -10,11 +11,11 @@ class UserRole(str, Enum):
 class CustomerDTO(BaseModel):
     id: int
     name: str
-    role: UserRole = UserRole.CUSTOMER
+    role: Literal[UserRole.CUSTOMER] = UserRole.CUSTOMER
 
 
 class OfficerDTO(BaseModel):
     id: int
     name: str
     counter_id: int
-    role: UserRole = UserRole.OFFICER
+    role: Literal[UserRole.OFFICER] = UserRole.OFFICER
