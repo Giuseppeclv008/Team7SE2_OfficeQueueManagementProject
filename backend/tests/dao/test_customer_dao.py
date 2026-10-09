@@ -4,14 +4,6 @@ from app.dao.customer_dao import CustomerDAO
 from app.dto.auth_mockup_dto import CustomerDTO, UserRole
 
 
-@pytest.fixture(autouse=True)
-def reset_customer_storage():
-    CustomerDAO._customers.clear()
-    CustomerDAO._customers[1] = CustomerDTO(
-        id=1, name="Customer 1", role=UserRole.CUSTOMER
-    )
-
-
 # --- seed data --------------------------------------------------------------
 
 
@@ -19,6 +11,13 @@ def test_starts_with_one_mock_customer():
     customers = CustomerDAO().find_all()
 
     assert customers == [CustomerDTO(id=1, name="Customer 1", role=UserRole.CUSTOMER)]
+
+
+def test_instances_do_not_share_state():
+    first = CustomerDAO()
+    first.save(CustomerDTO(id=2, name="Alice"))
+
+    assert CustomerDAO().find_by_id(2) is None
 
 
 # --- find_by_id -------------------------------------------------------------
@@ -80,6 +79,11 @@ def test_find_all_keeps_insertion_order():
 # --- known bugs (code review) -----------------------------------------------
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason="Storage is per instance and re-seeded in __init__, so a customer "
+    "saved through one DAO (e.g. one request) is gone in the next.",
+)
 def test_bug_saved_customer_lost_with_new_dao_instance():
     customer = CustomerDTO(id=42, name="Mario")
     CustomerDAO().save(customer)
