@@ -1,0 +1,156 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# A newer push to the same branch/PR cancels the older run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PYTHON_VERSION: "3.13" # keep in sync with backend/Dockerfile
+
+jobs:
+  tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/requirements-dev.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Run tests
+        run: python -m pytest -v --ignore=tests/api
+        env:
+          DATABASE_URL: sqlite:// # unit tests never connect
+
+  integration:
+    name: Integration tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/requirements-dev.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      # HTTP -> router -> QueueManager -> DAO -> in-memory SQLite (see tests/api/conftest.py)
+      - name: Run integration tests
+        run: |
+          if [ ! -d tests/api ]; then
+            echo "::notice::No integration tests (backend/tests/api) on this ref, skipping"
+            exit 0
+          fi
+          python -m pytest -v tests/api
+        env:
+          DATABASE_URL: sqlite:// # app.config needs a value; tests override the DAO and queue manager
+
+  migrations:
+    name: Database migrations
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      db:
+        image: postgres:16
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: office_queue
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U app -d office_queue"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql+psycopg://app:app@localhost:5432/office_queue
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Upgrade to latest migration
+        run: alembic upgrade head
+
+      - name: Downgrade all migrations
+        run: alembic downgrade base
+
+      - name: Upgrade again
+        run: alembic upgrade head
+
+      - name: Check models match migrations
+        run: alembic check
+
+  docker:
+    name: Docker build and health check
+    runs-on: ubuntu-latest
+    env:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: office_queue
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build and start services
+        run: docker compose up --build --detach
+
+      - name: Wait for /health
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error http://localhost:8000/health; then
+              echo
+              echo "Backend healthy after $attempt attempt(s)"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Backend did not become healthy in time"
+          exit 1
+
+      - name: Show logs
+        if: failure()
+        run: docker compose logs
+
+      - name: Stop services
+        if: always()
+        run: docker compose down --volumes

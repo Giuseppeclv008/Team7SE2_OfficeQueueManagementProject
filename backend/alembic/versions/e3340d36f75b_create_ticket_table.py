@@ -45,3 +45,6 @@ def downgrade() -> None:
     )
     op.drop_table('ticket')
     # ### end Alembic commands ###
+    # drop_table does not remove the Postgres enum types the table used
+    sa.Enum(name='ticketstatus').drop(op.get_bind(), checkfirst=True)
+    sa.Enum(name='servicetype').drop(op.get_bind(), checkfirst=True)
