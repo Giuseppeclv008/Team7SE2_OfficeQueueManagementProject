@@ -40,9 +40,40 @@ jobs:
         run: pip install -r requirements-dev.txt
 
       - name: Run tests
-        run: python -m pytest -v
+        run: python -m pytest -v --ignore=tests/api
         env:
           DATABASE_URL: sqlite:// # unit tests never connect
+
+  integration:
+    name: Integration tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/requirements-dev.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      # HTTP -> router -> QueueManager -> DAO -> in-memory SQLite (see tests/api/conftest.py)
+      - name: Run integration tests
+        run: |
+          if [ ! -d tests/api ]; then
+            echo "::notice::No integration tests (backend/tests/api) on this ref, skipping"
+            exit 0
+          fi
+          python -m pytest -v tests/api
+        env:
+          DATABASE_URL: sqlite:// # app.config needs a value; tests override the DAO and queue manager
 
   migrations:
     name: Database migrations
