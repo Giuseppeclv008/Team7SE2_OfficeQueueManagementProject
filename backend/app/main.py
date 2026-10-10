@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import get_db
+from app.routers import tickets
 
 app = FastAPI(title="Office Queue Management API")
 
@@ -17,6 +18,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(tickets.router)
 
 
 @app.get("/health")

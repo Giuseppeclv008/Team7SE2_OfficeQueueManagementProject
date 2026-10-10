@@ -61,3 +61,30 @@ def test_format_code_above_999_grows_instead_of_wrapping():
 
 def test_format_code_custom_prefixes_and_digits():
     assert format_code(S.BOXES, 1, prefixes={S.BOXES: "Z"}, digits=2) == "Z01"
+
+
+def test_numbering_resumes_from_last_stored_code(fake_today):
+    stored = {S.BOXES: 4}
+    generator = DailyServiceNumberGenerator(
+        today=fake_today, last_code=lambda service, day: stored.get(service, 0)
+    )
+
+    assert [generator.next(S.BOXES) for _ in range(2)] == [5, 6]
+    assert generator.next(S.BILLS_PAYMENT) == 1
+
+
+def test_last_code_is_looked_up_once_per_service_per_day(fake_today):
+    calls = []
+
+    def last_code(service, day):
+        calls.append((service, day))
+        return 0
+
+    generator = DailyServiceNumberGenerator(today=fake_today, last_code=last_code)
+    generator.next(S.BOXES)
+    generator.next(S.BOXES)
+    fake_today.advance()
+    generator.next(S.BOXES)
+
+    assert len(calls) == 2
+    assert calls[0][1] != calls[1][1]
