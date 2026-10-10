@@ -1,0 +1,62 @@
+:root {
+  --bg: #f5f7fa;          
+  --surface: #ffffff;    
+  --text: #111827;        
+  --border: #111827;
+
+  --primary: #005a8c;     
+  --primary-hover: #004470;
+  --accent: #e69f00;     
+  --focus: #d55e00;      
+
+  --fs-base: clamp(20px, 2.2vw, 32px);
+  --fs-title: clamp(32px, 5vw, 64px);
+  --fs-button: clamp(26px, 3.5vw, 44px);
+  --fs-huge: clamp(72px, 14vw, 200px);
+
+  --space: clamp(12px, 2.5vw, 32px);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, Arial, sans-serif;
+  font-size: var(--fs-base);
+  line-height: 1.4;
+}
+
+h1 {
+  font-size: var(--fs-title);
+  margin: 0 0 var(--space);
+  overflow-wrap: anywhere;   
+}
+
+.page {
+  min-height: 100vh;
+  min-height: 100dvh;     
+  padding: var(--space);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space);
+  text-align: center;
+}
+
+.huge-number {
+  font-size: var(--fs-huge);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.05em;
+}
