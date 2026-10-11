@@ -53,12 +53,12 @@ __all__ = [
 ]
 
 
-def create_default_queue_manager() -> QueueManager:
+def create_default_queue_manager(numbers: TicketNumberGenerator | None = None) -> QueueManager:
     """In-memory manager: one queue per ServiceType, every counter serves every service."""
     return QueueManager(
         queues={service: InMemoryTicketQueue() for service in ServiceType},
         bus=InMemoryEventBus(),
         policy=AllServicesPolicy(),
         strategy=LongestQueueStrategy(),
-        numbers=DailyServiceNumberGenerator(),
+        numbers=numbers or DailyServiceNumberGenerator(),
     )
