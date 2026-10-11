@@ -79,11 +79,7 @@ def test_find_all_keeps_insertion_order():
 # --- known bugs (code review) -----------------------------------------------
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Storage is per instance and re-seeded in __init__, so a customer "
-    "saved through one DAO (e.g. one request) is gone in the next.",
-)
+
 def test_bug_saved_customer_lost_with_new_dao_instance():
     customer = CustomerDTO(id=42, name="Mario")
     CustomerDAO().save(customer)
