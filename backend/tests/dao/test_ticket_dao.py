@@ -2,8 +2,7 @@ import uuid
 from datetime import date, datetime, timezone
 
 import pytest
-from sqlalchemy.exc import IntegrityError, PendingRollbackError
-from sqlalchemy.orm.exc import UnmappedInstanceError
+from sqlalchemy.exc import IntegrityError
 
 from app.dao.ticket_dao import TicketDAO
 from app.models import ServiceType, Ticket, TicketStatus
@@ -133,34 +132,12 @@ def test_find_all_returns_tickets_of_every_service(db):
     assert {t.service_type for t in dao.find_all()} == set(ServiceType)
 
 
-# --- known bugs (code review) -----------------------------------------------
-# Each test asserts the intended behaviour and fails on the current code.
-# strict=True: once the bug is fixed the test XPASSes and fails the run, so
-# the marker gets removed.
+# --- regressions (code review) ----------------------------------------------
+# The UTC time zone of created_at is not tested here: SQLite drops it. Postgres
+# keeps it (DateTime(timezone=True) -> timestamptz, migration ef2ad31b8ed1).
 
 
-
-def test_bug_created_at_loses_utc_timezone(db):
-    issued = create_default_queue_manager().issue_ticket(S.BOXES)
-    dao = TicketDAO(db)
-    dao.save(
-        Ticket(
-            id=issued.id,
-            code=issued.code,
-            service_type=issued.service_type,
-            status=issued.status,
-            created_at=issued.created_at,
-        )
-    )
-    db.expunge_all()
-
-    stored = dao.find_by_id(issued.id)
-
-    assert stored.created_at.tzinfo is not None
-    assert stored.created_at == issued.created_at
-
-
-def test_bug_save_rejects_queue_ticket(db):
+def test_save_accepts_queue_ticket(db):
     issued = create_default_queue_manager().issue_ticket(S.BOXES)
     dao = TicketDAO(db)
 
@@ -169,8 +146,7 @@ def test_bug_save_rejects_queue_ticket(db):
     assert dao.find_by_id(issued.id).code == issued.code
 
 
-
-def test_bug_failed_save_leaves_session_unusable(db):
+def test_failed_save_rolls_back_session(db):
     dao = TicketDAO(db)
     first = dao.save(make_ticket(code=1))
     db.expunge_all()
@@ -181,14 +157,14 @@ def test_bug_failed_save_leaves_session_unusable(db):
     assert [t.code for t in dao.find_all()] == [1]
 
 
-
-def test_bug_find_all_order_undefined_for_equal_created_at(db):
+def test_find_all_breaks_created_at_ties_by_code(db):
     same_time = datetime(2026, 10, 8, 9, 0)
     dao = TicketDAO(db)
     for code in (3, 1, 2):
         dao.save(make_ticket(code=code, created_at=same_time))
 
     assert [t.code for t in dao.find_all()] == [1, 2, 3]
+
 
 # --- last_code --------------------------------------------------------------
 
