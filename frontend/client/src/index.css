@@ -9,12 +9,12 @@
   --accent: #e69f00;     
   --focus: #d55e00;      
 
-  --fs-base: clamp(20px, 2.2vw, 32px);
-  --fs-title: clamp(32px, 5vw, 64px);
-  --fs-button: clamp(26px, 3.5vw, 44px);
-  --fs-huge: clamp(72px, 14vw, 200px);
+  --fs-base: clamp(18px, min(2.2vw, 3vh), 32px);
+  --fs-title: clamp(28px, min(5vw, 7vh), 64px);
+  --fs-button: clamp(24px, min(3.5vw, 5vh), 44px);
+  --fs-huge: clamp(64px, min(14vw, 24vh), 200px);
 
-  --space: clamp(12px, 2.5vw, 32px);
+  --space: clamp(10px, min(2.5vw, 2.5vh), 32px);
 }
 
 * {
@@ -38,8 +38,8 @@ body {
 
 h1 {
   font-size: var(--fs-title);
-  margin: 0 0 var(--space);
-  overflow-wrap: anywhere;   
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .page {
@@ -56,11 +56,11 @@ h1 {
 
 .button-grid {
   width: 100%;
-  max-width: 1400px;
+  max-width: 900px;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
+  grid-template-columns: 1fr;
   gap: var(--space);
-  justify-items: center;
+  justify-items: stretch;
 }
 
 .huge-number {
@@ -94,4 +94,13 @@ h1 {
 }
 .pop {
   animation: pop 0.8s ease-out 3;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.06); }
+}
+
+.pulse {
+  animation: pulse 1.6s ease-in-out infinite;
 }

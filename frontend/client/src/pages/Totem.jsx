@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import BigButton from "../components/BigButton";
 import { createTicket } from "../api/api";
 import { SERVICES } from "../config/services";
+import { formatTicket } from "../utils/formatTicket";
 
-const TICKET_SCREEN_MS = 8000;  
+const TICKET_SCREEN_MS = 5000;  
 
 export default function Totem() {
   const [ticket, setTicket] = useState(null);
@@ -35,7 +36,9 @@ export default function Totem() {
       <div className="page">
         <h1>Your Ticket</h1>
         <div className="card">
-          <div className="huge-number">{formatCode(ticket.code)}</div>
+          <div key={ticket.id} className="huge-number pop pulse">
+            {formatTicket(ticket.code, ticket.service_type)}
+          </div>
           <p>{ticket.serviceLabel}</p>
         </div>
         <p>Wait to be called on the screen</p>
