@@ -21,11 +21,7 @@ class TicketDAO:
         return self.db.get(Ticket, ticket_id)
 
     def find_all(self) -> list[Ticket]:
-        return list(
-            self.db.scalars(
-                select(Ticket).order_by(Ticket.created_at, Ticket.code)
-            ).all()
-        )
+        return list(self.db.scalars(select(Ticket).order_by(Ticket.created_at)).all())
 
     def last_code(self, service: ServiceType, day: date) -> int:
         """Highest code issued for a service on a UTC day, or 0 if none."""
