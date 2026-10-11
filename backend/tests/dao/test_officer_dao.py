@@ -1,5 +1,3 @@
-import pytest
-
 from app.dao.officer_dao import OfficerDAO
 from app.dto.auth_mockup_dto import OfficerDTO, UserRole
 from app.models import ServiceType
@@ -15,12 +13,6 @@ def test_starts_with_two_mock_officers_on_distinct_counters():
 
     assert [(o.id, o.counter_id) for o in officers] == [(1, 1), (2, 2)]
     assert all(o.role is UserRole.OFFICER for o in officers)
-
-
-def test_instances_do_not_share_state():
-    OfficerDAO().save(OfficerDTO(id=3, name="Bob", counter_id=3))
-
-    assert OfficerDAO().find_by_id(3) is None
 
 
 # --- find_by_id -------------------------------------------------------------
@@ -69,17 +61,20 @@ def test_find_all_returns_a_copy():
     assert len(dao.find_all()) == 2
 
 
-# --- known bugs (code review) -----------------------------------------------
+# --- shared storage ---------------------------------------------------------
 
 
-def test_bug_saved_officer_lost_with_new_dao_instance():
+def test_saved_officer_is_visible_to_a_new_dao_instance():
     officer = OfficerDTO(id=42, name="Luigi", counter_id=3)
     OfficerDAO().save(officer)
 
     assert OfficerDAO().find_by_id(42) == officer
 
 
-def test_bug_officer_counter_id_type_mismatches_queue_api():
+# --- queue integration ------------------------------------------------------
+
+
+def test_officer_counter_id_works_with_queue_api():
     officer = OfficerDAO().find_by_id(1)
     manager = create_default_queue_manager()
     called: list[TicketCalled] = []

@@ -4,6 +4,7 @@ from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 from app.models.serviceType import ServiceType
 from app.models.ticket import Ticket
+from app.ticket_queue.models import Ticket as QueueTicket
 
 
 class TicketDAO:
@@ -11,11 +12,20 @@ class TicketDAO:
     def __init__(self, db: Session):
         self.db = db
 
-    def save(self, ticket: Ticket) -> Ticket:
+    def save(self, ticket: Ticket | QueueTicket) -> Ticket:
+        if isinstance(ticket, QueueTicket):
+            ticket = Ticket(
+                id=ticket.id,
+                code=ticket.code,
+                service_type=ticket.service_type,
+                status=ticket.status,
+                created_at=ticket.created_at,
+            )
+        self.db.add(ticket)
         try:
-            self.db.add(ticket)
             self.db.commit()
         except Exception:
+            # Leave the session usable for the next DAO call.
             self.db.rollback()
             raise
         self.db.refresh(ticket)
@@ -25,10 +35,7 @@ class TicketDAO:
         return self.db.get(Ticket, ticket_id)
 
     def find_all(self) -> list[Ticket]:
-        stmt = select(Ticket).order_by(Ticket.created_at, Ticket.code)
-        return list(self.db.scalars(stmt).all())
-
-
+        return list(self.db.scalars(select(Ticket).order_by(Ticket.created_at, Ticket.code)).all())
 
     def last_code(self, service: ServiceType, day: date) -> int:
         """Highest code issued for a service on a UTC day, or 0 if none."""

@@ -1,3 +1,6 @@
+from datetime import datetime, timezone
+from uuid import UUID
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import func, select
@@ -7,13 +10,21 @@ from app.dao.ticket_dao import TicketDAO
 from app.main import app
 from app.models import Ticket
 from app.routers.tickets import get_queue_manager, get_ticket_dao
-from app.ticket_queue import DailyServiceNumberGenerator, ServiceType, create_default_queue_manager
+from app.ticket_queue import (
+    DailyServiceNumberGenerator,
+    ServiceType,
+    TicketStatus,
+    create_default_queue_manager,
+)
 
 
 def make_manager(db: Session):
     """What the app builds at startup, reading previous codes from the test database."""
     return create_default_queue_manager(
-        numbers=DailyServiceNumberGenerator(last_code=TicketDAO(db).last_code)
+        numbers=DailyServiceNumberGenerator(
+            today=lambda: datetime.now(timezone.utc).date(),
+            last_code=TicketDAO(db).last_code,
+        )
     )
 
 
@@ -81,3 +92,41 @@ def test_numbering_continues_after_a_restart(client, db):
     response = client.post("/tickets", json={"service_type": "boxes"})
 
     assert response.json()["code"] == 3
+
+
+# Checks the customer-visible HTTP response without inspecting internal app state.
+def test_get_ticket_black_box_http_contract(client):
+    """Check the customer-visible behavior without inspecting app internals."""
+    response = client.post("/tickets", json={"service_type": "boxes"})
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["id"]
+    assert body["code"] == 1
+    assert body["service_type"] == "boxes"
+    assert body["status"] == "waiting"
+    assert body["created_at"]
+
+
+# Checks the route, queue manager, and database together, then calls manager.call_next() and verifies the ticket leaves the in-memory queue.
+def test_get_ticket_white_box_connects_route_queue_and_database(client, manager, db):
+    """Trace one issued ticket through the endpoint, queue manager, and DAO."""
+    response = client.post("/tickets", json={"service_type": "bills_payment"})
+    assert response.status_code == 201
+    body = response.json()
+
+    service = ServiceType.BILLS_PAYMENT
+    assert manager.queue_lengths()[service] == 1
+
+    stored = db.scalars(select(Ticket).where(Ticket.id == UUID(body["id"]))).one()
+    assert stored.code == body["code"]
+    assert stored.service_type is service
+    assert stored.status is TicketStatus.WAITING
+
+    called = manager.call_next("counter-1")
+    assert called is not None
+    assert str(called.id) == body["id"]
+    assert called.code == stored.code
+    assert called.service_type is stored.service_type
+    assert called.status is TicketStatus.IN_PROGRESS
+    assert manager.queue_lengths()[service] == 0
