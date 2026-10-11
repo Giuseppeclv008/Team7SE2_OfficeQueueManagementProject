@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.dao.ticket_dao import TicketDAO
 from app.database import SessionLocal, get_db
 from app.dto.ticket_dto import TicketCreateDTO, TicketResponseDTO
-from app.models import ServiceType
+from app.models import ServiceType, Ticket
 from app.ticket_queue import (
     DailyServiceNumberGenerator,
     QueueManager,
@@ -49,5 +49,12 @@ def new_ticket(
     dao: Annotated[TicketDAO, Depends(get_ticket_dao)],
 ) -> TicketResponseDTO:
     """Issue a ticket for the requested service, queue it and store it."""
-    ticket = manager.issue_ticket(body.service_type)
+    issued = manager.issue_ticket(body.service_type)
+    ticket = Ticket(
+        id=issued.id,
+        code=issued.code,
+        service_type=issued.service_type,
+        status=issued.status,
+        created_at=issued.created_at,
+    )
     return TicketResponseDTO.model_validate(dao.save(ticket))
