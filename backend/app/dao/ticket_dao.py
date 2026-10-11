@@ -1,6 +1,6 @@
 from datetime import date, datetime, time, timedelta, timezone
 from uuid import UUID
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 from app.models.serviceType import ServiceType
 from app.models.ticket import Ticket
@@ -25,7 +25,6 @@ class TicketDAO:
         return self.db.get(Ticket, ticket_id)
 
     def find_all(self) -> list[Ticket]:
-        feat/services_and_dao
         stmt = select(Ticket).order_by(Ticket.created_at, Ticket.code)
         return list(self.db.scalars(stmt).all())
 
