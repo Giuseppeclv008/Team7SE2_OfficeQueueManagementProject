@@ -82,16 +82,14 @@ def test_officer_serializes_role_as_value():
     }
 
 
-# --- known bugs (code review) -----------------------------------------------
+# --- role is fixed per DTO ---------------------------------------------------
 
 
-
-def test_customer_dto_accepts_officer_role():
+def test_customer_dto_rejects_officer_role():
     with pytest.raises(ValidationError):
         CustomerDTO(id=2, name="x", role=UserRole.OFFICER)
 
 
-
-def test_officer_dto_accepts_customer_role():
+def test_officer_dto_rejects_customer_role():
     with pytest.raises(ValidationError):
         OfficerDTO(id=2, name="x", counter_id=1, role=UserRole.CUSTOMER)

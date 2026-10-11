@@ -58,7 +58,8 @@ class QueueManager:
         self._bus.publish(TicketIssued(ticket))
         return ticket
 
-    def call_next(self, counter_id: str) -> Ticket | None:
+    def call_next(self, counter_id: str | int) -> Ticket | None:
+        counter_id = str(counter_id)  # counters are keyed by str; OfficerDTO.counter_id is int
         with self._lock:
             eligible = self._policy.eligible_services(counter_id)
             candidates = {s: q for s, q in self._queues.items() if s in eligible}
