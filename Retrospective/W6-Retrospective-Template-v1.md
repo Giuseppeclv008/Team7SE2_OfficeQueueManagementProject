@@ -22,8 +22,10 @@ sections:
 - Code review completed
 - Code present on Git
 - End-to-End tests performed
+- UI testing performed
+- Deployment ready
 
-> Please refine your DoD 
+
 
 ### Detailed statistics
 
@@ -71,7 +73,7 @@ sections:
 - Code review 
   - Total hours estimated: 30m
   - Total hours spent: 40m
-  - Done through GitHub PRs #1–#9; review found DAO/DTO bugs, which were tracked as xfail tests and fixed (c491192)
+  - Done through GitHub PRs #1–#9; review found DAO/DTO bugs, which were tracked as xfail tests and fixed 
 
 
 ## ASSESSMENT
@@ -82,7 +84,7 @@ sections:
   - Story #1 was estimated accurately (10h 45m vs 11h 30m, −7%).
 
 - What lessons did you learn (both positive and negative) in this sprint?
-  - Positive: writing tests early (xfail for known bugs) made review findings visible and verifiable; CI on every PR caught breakages before merge.
+  - Positive: writing tests early made review findings visible and verifiable; CI on every PR caught breakages before merge.
   - Negative: technical setup was badly underestimated, and long-lived feature branches caused conflicts and rework.
 
 - Which improvement goals set in the previous retrospective were you able to achieve? 
@@ -94,8 +96,6 @@ sections:
 
 > Propose one or two
 
-  1. Use short-lived branches merged to `main` at least daily, to reduce conflicts and rework.
-  2. Estimate technical tasks with a buffer, and log hours per task (including testing and review), so per-task statistics can be measured exactly.
-
+  1. Improve estimation of technical tasks specific per each story.
 - One thing you are proud of as a Team!!
-  - The complete *Get Ticket* flow works (Totem UI → API → queue → DB), backed by CI and 141 passing tests.
+  - The complete *Get Ticket* flow works (Totem UI → API → queue → DB), backed by CI and 141 passing tests and a well done communication between teammates.
